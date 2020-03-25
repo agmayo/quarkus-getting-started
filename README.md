@@ -1,10 +1,18 @@
 # quarkus-getting-started
 
-It's a  microservice that returns a greeting (*hello hello!*)
+The objective to achieve will be that any runtime properties defined in the file `application.properties` will override the default configuration. This is achieved by placing an `application.properties` file inside a directory named `config` which resides in the directory where the application runs. For this we will work with a microservice that returns a greeting (*hello hello!*).
 
-The objective to achieve will be that any runtime properties defined in the file `application.properties` will override the default configuration. For this we will follow the following steps:
+To complete the above we will make use of a Compose, which is basically a three-step process.
 
-#### Modify the Dockerfile.native:
+1. Define your environment with a `Dockerfile` so it can be reproduced anywhere.
+2. Define the services  in `docker-compose.yml` so they can be run together in an isolated environment.
+3. Lastly, run `docker-compose up`.
+
+## Getting started
+
+We have followed the following steps:
+
+#####  Modify the Dockerfile.native:
 
 ```
 ####
@@ -27,7 +35,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 WORKDIR /work/
 
 # installing text editors for properties update
-RUN microdnf install curl vi vim nano \
+RUN microdnf install vi vim nano \
   && microdnf update \
   && microdnf clean all 
   
@@ -55,103 +63,28 @@ What has been added in this file is:
 
 `COPY src/main/resources/application.properties /work/config/`
 
-`RUN microdnf install curl vi vim nano \`
+`RUN microdnf install vi vim nano \`
   `&& microdnf update \`
   `&& microdnf clean all` 
 
-By placing an `application.properties` file inside a directory named `config` which resides in the directory where the application runs, any runtime properties defined in that file will override the default configuration.
+In addition, we also delete the file: `.dockerignore`
 
-#### Generate a docker image
+###### Content of .dockerignore:
 
-Execute:
-
-```bash
-mvn package -Pnative -Dquarkus.native.container-runtime=docker
+```
+*
+!target/*-runner
+!target/*-runner.jar
+!target/lib/*
 ```
 
-#### Create the docker image in the image local repository:
+We are going to do this so that it can be run: `COPY src / main / resources / application.properties / work / config /`
 
-```bash
-docker build -f src/main/docker/Dockerfile.native -t agmayo/testing-external-properties .
-```
-
-#### Run the image's container:
-
-```bash
-docker run -i -p 8080:8080 agmayo/testing-external-properties
-```
-
-
-
-## Testing
-
-**Content of `application.properties:`**
-
-```properties
-# Configuration file
-# key = value
-greeting.message = hello
-greeting.name = hello
-```
-
-To check it's behavior just run the following `curl`:
-
-```bash
-curl http://localhost:8080/hello
-```
-
-It will return:
-
-`hello hello!`
-
-We will also rename the `.dockerignore` file. In this case we will do:
-
-```bash
-mv .dockerignore kk 
-```
-
-To verify that the service changes we will go into the container and edit the file `application.properties`:
-
-```bash
-docker exec -it <CONTAINER_ID> bash   
-```
-
-**Content of `application.properties:`**
-
-```properties
-# Configuration file
-# key = value
-greeting.message = bye
-greeting.name = bye
-```
-
-To check it's behavior just run the following `curl`:
-
-```bash
-curl http://localhost:8080/hello
-```
-
-It will return:
-
-`bye bye!`
-
-
-
-# Docker-compose 
+##### Docker-compose
 
 In the next step we will create a docker-compose in which we have a service and a volume that maps a local directory to a directory of the container.
 
-### Folder structure:
-
-```
-├── microservice-A
-│    └── application.properties
-├── docker-compose.yml
-```
-
-
-
-### Content of the docker-compose.yml:
+###### Content of the docker-compose.yml:
 
 ```yml
 version: "3.7"
@@ -176,74 +109,88 @@ services:
 
 A bind mount is a file or folder stored anywhere on the container host filesystem, mounted into a running container.
 
-### Building and running
 
-To install the microservice you'll have to:
 
-* Sing in `docker-hub` with : 
+## Folder structure:
 
-  ```bash
-  docker login
-  # Fill up the credentials with an user with permissions.
-  ```
-
-* Download the image:
-
-  ```bash
-  docker push agmayo/testing-external-properties:latest
-  ```
-
-* Build all docker images
-
-  ```bash
-  docker-compose build
-  ```
-
-* Starts the containers in the background and leaves them running:
-
-  ```bash
-  docker-compose up -d
-  ```
+```
+├── microservice-A
+│    └── application.properties
+├── docker-compose.yml
+```
 
 
 
 ## Testing
 
-To check it's behavior just run the following `curl`:
+To install the microservice you'll have to:
 
-```bash
-curl http://localhost:8080/hello
-```
+1. Starts the containers in the background and leaves them running:
 
-It will return:
-
-`hello hello!`
-
-
-
-- Stops containers:
-
-```bash
-docker-compose down
-```
-
-- Starts the containers in the background and leaves them running:
 
 ```bash
 docker-compose up -d
 ```
 
+​	**Content of `application.properties:`**
 
+```properties
+# Configuration file
+# key = value
+greeting.message = hello
+greeting.name = hello
+```
 
-We will change the file `application.properties` and verify that the response has also changed.
+2. To check it's behavior just run the following `curl`:
 
-To check it's behavior just run the following `curl`:
+```
+curl http://localhost:8080/hello 
+```
+
+​	It will return:
+
+​	`hello hello!`
+
+3. Stops containers:
+
+```bash
+docker-compose down
+```
+
+4. We will change the file `application.properties` and verify that the response has also changed:
+
+**Content of `application.properties:`**
+
+```properties
+# Configuration file
+# key = value
+greeting.message = bye
+greeting.name = bye
+```
+
+5. Starts the containers in the background and leaves them running:
+
+```bash
+docker-compose up -d
+```
+
+6. To check it's behavior just run the following `curl`:
 
 ```bash
 curl http://localhost:8080/hello
 ```
 
-It will return:
+​	It will return:
 
-`bye bye!`
+​	`bye bye!`
+
+## Clean up
+
+Don't leave without cleaning your machine!
+
+```bash
+docker-compose down --volumes --rmi all --remove-orphans
+```
+
+
 
