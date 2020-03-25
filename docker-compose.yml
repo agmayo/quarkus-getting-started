@@ -1,0 +1,16 @@
+version: "3.7"
+services:
+  testing-external-properties:
+    image: testing-external-properties
+    build:
+      context: .
+      dockerfile: ./src/main/docker/Dockerfile.native
+    container_name: testing-external-properties
+    ports: 
+        # To receive the curls
+        - 8080:8080
+    volumes: 
+        # Volume for  persistance
+        - type: bind
+          source: ./src/main/resources/application.properties
+          target: /work/config/application.properties
